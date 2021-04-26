@@ -1,0 +1,537 @@
+from tkinter import *
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+from tkinter import filedialog
+from cpapi import APIClient,APIClientArgs
+from ipaddress import IPv4Address
+import ipaddress
+import pandas as pd
+from openpyxl import Workbook,load_workbook
+import requests
+from pprint import pprint
+import os
+from os import path
+from datetime import datetime,date
+
+
+
+
+
+def Main_Window():
+
+
+
+    if path.exists(r"C:\Checkpoint_Automation\Publish_Logs") is False:
+        file = os.makedirs(r"C:\Checkpoint_Automation\Publish_Logs")
+
+
+    if path.exists(r'C:\Checkpoint_Automation\Sample.xlsx') is False:
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sample"
+        ws['A1'] = 'Object Name'
+        ws['B1'] = 'IP Address'
+        ws['C1'] = 'Subnet Mask'
+        
+        
+        ws['A2'] = 'TEST'
+        ws["B2"]= "10.106.15.65"
+        ws["C2"] = "32"
+        
+        
+        wb.save(filename = "C:\Checkpoint_Automation\Sample.xlsx") ###Sample xlsx format
+
+
+    main_window = Tk()
+    main_window.title("CheckPoint Automation")
+    main_window.geometry("480x420-1000+500")
+    main_window.configure(bg='white')
+    main_window.minsize(440, 400)
+    main_window.maxsize(500, 500)
+    canvas = Canvas(main_window,height = 480, width = 420)
+    canvas.pack()
+
+    image_file = PhotoImage(file = r'C:\Users\Sercan\Desktop\Python_Projects\python.png')  ##### Image for main menu. You need to change it
+    background = Label(canvas, image = image_file,bg='white')
+    background.pack(side = TOP)
+    
+
+    Label(main_window,text=" Welcome To CheckPoint Automation",
+          fg="green",bg="white",font=("Times New Roman", 16)).pack(side = TOP, pady = 10)
+    
+
+    Button(main_window,text=" Enter ",
+           fg="green",bg="white",font=("Times New Roman", 14),command = lambda:[main_window.destroy(),Information_Window()]).pack(side = TOP,pady=2)
+    
+
+    main_window.mainloop()
+
+
+def Clear_Label(label):
+    label.delete(first=0,last=100)
+    
+
+def Information_Window():
+
+    info_window = Tk()
+    info_window.title("Main Menu")
+    info_window.geometry("320x240-1000+500")
+    info_window.configure(bg='white')
+    info_window.minsize(300 ,210)
+    info_window.maxsize(420 ,240)
+
+    image_file = PhotoImage(file = r'C:\Users\Sercan\Desktop\Python_Projects\python.png')  ##### Image for main menu. You need to change it
+    background = Label(info_window,image = image_file,bg='white')
+    background.place(x=70,y=-20,relwidth=1, relheight=1)
+    
+
+    Button(info_window,text =" Add Host ",fg="green",bg="white",font=("Times New Roman", 14),justify='center',
+           command = lambda:[info_window.destroy(), CheckPoint.Add_New_Host_Window("Add Host")]).pack(side = LEFT,padx=10)
+
+    info_window.mainloop()
+
+    
+
+class CheckPoint():
+
+    def Back(window):
+        window.destroy()
+        Information_Window()
+
+
+    def Clear_Label(label):
+        label.delete(first=0,last=100)
+
+
+    ################# windows ##############
+    
+    def Add_New_Host_Window(section):
+
+        Add_New_Host_Window = Tk()
+        Add_New_Host_Window.title("%s"%(section))
+        Add_New_Host_Window.configure(bg='white')
+        Add_New_Host_Window.geometry("440x220-1000+500")
+        Add_New_Host_Window.minsize(420 ,220)
+        Add_New_Host_Window.maxsize(440 ,220)
+
+        
+        image_file = PhotoImage(file = r'C:\Users\Sercan\Desktop\Python_Projects\python.png')   ##### Image for main menu. You need to change it
+        background = Label(Add_New_Host_Window,image = image_file,bg='white')
+        background.place(x=100,y=-20,relwidth=1, relheight=1)
+        
+        Label(Add_New_Host_Window,bg="white").grid(row =1,column =0)
+        
+        Button(Add_New_Host_Window,text =" Add New Single Host ",fg="green",bg="white",font=("Times New Roman", 14),justify='center',
+               command = lambda:[Add_New_Host_Window.destroy(),CheckPoint.API_Login_Window("Add New Single Host")]).grid(row =2,column =0)
+        
+        Button(Add_New_Host_Window,text =" Add New Multiple Hosts ",fg="green",bg="white",font=("Times New Roman", 14),justify='center',
+               command = lambda:[Add_New_Host_Window.destroy(),CheckPoint.API_Login_Window("Add New Multiple Hosts")]).grid(row =3,column =0)
+        
+        Label(Add_New_Host_Window,bg="white").grid(row =4,column =0)
+        
+        Button(Add_New_Host_Window,text ="<-- Back ",fg="green",bg="white",font=("Times New Roman", 14),justify='center',
+               command = lambda:[CheckPoint.Back(Add_New_Host_Window)]).grid(row =5,column =0)
+        
+
+        Add_New_Host_Window.mainloop()
+
+    
+
+    def API_Login_Window(section):
+
+        global API_Login,API_serverE,API_userE,API_passwordE
+
+        API_Login = Tk()
+        API_Login.title("API Login - %s"%(section))
+        API_Login.geometry("360x180-1000+500")
+        API_Login.minsize(200 ,180)
+        API_Login.maxsize(400 ,220)
+
+        Label(API_Login).grid(column=0)
+        Label(API_Login).grid(row=0)
+        Label(API_Login,text = "API Server:",fg="green",font=("Times New Roman", 12)).grid(row =1,column=1,sticky =W)
+        API_serverS = StringVar()
+        API_serverE= Entry(API_Login,textvariable = API_serverS)
+        API_serverE.grid(row =1,column =2,sticky =E)
+
+        Label(API_Login,text = "API User:",fg="green",font=("Times New Roman", 12)).grid(row =2,column=1,sticky =W)
+        API_userS = StringVar()
+        API_userE= Entry(API_Login,textvariable = API_userS)
+        API_userE.grid(row =2,column =2,sticky =E)
+
+        Label(API_Login,text = "Password:",fg="green",font=("Times New Roman", 12)).grid(row =3,column=1,sticky =W)
+        API_passwordS = StringVar()
+        API_passwordE= Entry(API_Login,show="*",textvariable = API_passwordS)
+        API_passwordE.grid(row =3,column =2,sticky =E)
+
+        Label(API_Login).grid(row =4)
+
+        Button(API_Login,text =" Back ",fg="green",bg="white",font=("Times New Roman", 12),
+               command = lambda:[CheckPoint.Back(API_Login)]).grid(row =7,column =2,sticky =W)
+        
+
+        Button(API_Login,text ="Login",fg="green",bg="white",font=("Times New Roman", 12),
+               command = lambda:[CheckPoint.API_Login_Func(API_userS.get(),API_passwordS.get(),API_serverS.get(),section)]).grid(row =7,column =2,sticky =E)
+
+        API_Login.mainloop()
+
+
+
+    ################## Functions #########################
+        
+    def API_Login_Func(user,password,api_server,section):
+
+            global  API_user, API_password,API_server_checked, domain_list,domain_id
+
+                       
+
+            API_user = str(user)
+            API_password = str(password)
+            api_server = str(api_server)
+            
+
+            try:
+                    API_server_checked = IPv4Address(api_server)
+                    
+                   
+            except ipaddress.AddressValueError:
+                    messagebox.showerror("Error","Invalid IP address!")
+                    Clear_Label(API_serverE)
+                    Clear_Label(API_userE)
+                    Clear_Label(API_passwordE)
+                    
+            else:
+                    client_args = APIClientArgs(server= str(API_server_checked))
+                    with APIClient(client_args) as client:
+
+                        fingerprint_for_client=client.get_server_fingerprint()
+                        client.save_fingerprint_to_file(server= str(API_server_checked),fingerprint=str(fingerprint_for_client))
+
+                        if client.check_fingerprint() is False:
+                            messagebox.showerror("Error", "Could not get the server's fingerprint - Check connectivity with the server.")
+                            API_Login.destroy()
+                            CheckPoint.API_Login_Window(section)
+                        else:
+                            
+                            login_res = client.login(API_user,API_password)
+                            
+                            if login_res.success is False:
+                                messagebox.showerror("Error","Login failed")
+                                API_Login.destroy()
+                                CheckPoint.API_Login_Window(section)
+                            else:
+                                messagebox.showinfo("Successful", "Login Was Successful ! ")
+
+                                domain_check = client.api_query("show-domains")
+                            
+
+                                if str(domain_check.res_obj["data"].get("total")) != "0" :
+                                    domain_list = []
+                                    for name in domain_check.data:
+                                        domain_list.append(name["name"])
+
+                                    Domain_Selection = Tk()
+                                    Domain_Selection.title("Domain Selection")
+                                    Domain_Selection.geometry("360x220-1000+500")
+                                    Domain_Selection.minsize(200 ,180)
+                                    Domain_Selection.maxsize(500 ,220)
+
+                                    def Selected():
+
+                                        global domain_id
+                                        
+                                        domain_id = str(ListBox.get(ANCHOR))
+                                        Domain_Selection.destroy()
+                                        
+                                        if section == "Add New Single Host":
+                                            API_Login.destroy()
+                                            CheckPoint.Add_Single_New_Host_Window()
+
+                                        if section == "Add New Multiple Hosts":
+                                            API_Login.destroy()
+                                            CheckPoint.Add_New_Multiple_Hosts_Window()
+
+                                    ListBox = Listbox(Domain_Selection)
+                                    ListBox.pack()
+
+                                    for i in range (0,len(domain_list)):
+                                        ListBox.insert(i,domain_list[i])
+                                    
+
+                                    Button(Domain_Selection,text = "Select",fg="green",font=("Times New Roman", 12),command=Selected).pack(pady=10)
+                                    show = Label(Domain_Selection)
+                                    show.pack()
+
+                                    Domain_Selection.mainloop()
+                                        
+                                else:
+                                    domain_id = ""
+
+                                    if section == "Add New Single Host":
+                                        API_Login.destroy()
+                                        CheckPoint.Add_Single_New_Host_Window()
+
+                                    if section == "Add New Multiple Hosts":
+                                        API_Login.destroy()
+                                        CheckPoint.Add_New_Multiple_Hosts_Window()
+
+                                
+
+                            
+
+      ############################################## New Host Section ####################################                  
+    
+            
+    def Add_Single_New_Host_Window():
+
+        Add_Single_New_Host_Window = Tk()
+        Add_Single_New_Host_Window.title("Add Single New Host")
+        Add_Single_New_Host_Window.geometry("320x180-1000+500")
+        Add_Single_New_Host_Window.minsize(200 ,180)
+        Add_Single_New_Host_Window.maxsize(400 ,220)
+
+        Label(Add_Single_New_Host_Window).grid(row=0)
+        
+        Label(Add_Single_New_Host_Window,text = "Host IP:",fg="green",font=("Times New Roman", 12)).grid(row =1,sticky =W)
+        Host_IpS = StringVar()
+        Host_IpE = Entry(Add_Single_New_Host_Window,textvariable = Host_IpS)
+        Host_IpE.grid(row =1,column =1,sticky =E)
+
+        Label(Add_Single_New_Host_Window,text = "/32",fg="green",font=("Times New Roman", 12)).grid(row =1,column =2,sticky =W)
+
+        Label(Add_Single_New_Host_Window,text = "Host Name:",fg="green",font=("Times New Roman", 12)).grid(row =2,sticky =W)
+        Host_NameS = StringVar()
+        Host_NameE = Entry(Add_Single_New_Host_Window,textvariable = Host_NameS)
+        Host_NameE.grid(row =2,column =1,sticky =E)
+
+        Button(Add_Single_New_Host_Window,text =" Back ",fg="green",bg="white",font=("Times New Roman", 12),
+               command = lambda:[CheckPoint.Back(Add_Single_New_Host_Window)]).grid(row =7,column =1,sticky =E)
+        
+        Button(Add_Single_New_Host_Window,text ="Submit",fg="green",bg="white",font=("Times New Roman", 12),
+               command = lambda:[CheckPoint.Add_New_Single_Host_Check(Host_IpS.get(),Host_NameS.get())]).grid(row =7,column =1,sticky =W)
+
+
+        Button(Add_Single_New_Host_Window,text =" Publish ",fg="green",bg="white",font=("Times New Roman", 12),
+               command = lambda:[CheckPoint.Publish()]).grid(row =8,column =1)
+        
+
+        Add_Single_New_Host_Window.mainloop()
+
+   
+    def Add_New_Single_Host_Check(ip,name):
+
+        
+
+        host_ip = str(ip)
+        host_name = str(name)
+
+
+        try:
+                new_host_ip = IPv4Address(host_ip)
+                str(new_host_ip)
+                    
+                   
+        except ipaddress.AddressValueError:
+                    messagebox.showerror("Error","Invalid IP address!")
+                    Clear_Label(API_serverE)
+                    Clear_Label(API_userE)
+                    Clear_Label(API_passwordE)
+                    
+        else:
+                client_args = APIClientArgs(server=str(API_server_checked))
+            
+                with APIClient(client_args) as client:
+                    login_res = client.login(API_user,API_password,domain=domain_id)
+
+    
+                    host_check = client.api_call("show-hosts",{"details-level":"full"})
+                    host_list = list(host_check.data["objects"])
+
+                    counter =0 
+                    
+                    for i in range(0,len(host_list)):
+                            if host_list[i]["ipv4-address"] == str(new_host_ip):
+                                messagebox.showerror("Error", "The host '%s' has already added !"%(new_host_ip))
+                            elif host_list[i]["name"] == str(host_name):
+                                messagebox.showerror("Error", "The host name '%s' has already used !"%(host_name))
+                            else:
+                                counter =counter + 1
+                        
+                    if counter == len(host_list):
+                        CheckPoint.Add_New_Single_Host_Func(str(new_host_ip),str(host_name))
+                   
+
+
+    def Add_New_Single_Host_Func(ip,name):
+
+        global uid
+
+        if name == "":
+            name= ip+"_32"
+        else:
+            name = name+"_32"
+
+        ref_time = datetime.now()
+        current_time = ref_time.strftime("%H_%M")
+
+        day = date.today()
+        today =  day.strftime("%d_%m_%Y")
+
+        log_time = today + ("_") + current_time
+        
+        log_file = open(r"C:\Checkpoint_Automation\Publish_Logs\%s_log.txt"%(log_time),"w")   ### For logging
+        
+        client_args = APIClientArgs(server=str(API_server_checked))
+            
+        with APIClient(client_args) as client:
+            
+                login_res = client.login(API_user,API_password,domain = domain_id)
+                create_host = client.api_call("add-host", {"name": str(name), "ip-address": str(ip),"color": "black", "comments": "no-comments"})
+
+                session_id = login_res.data["sid"]
+                print("Session id:" + str(session_id))
+
+                uid = login_res.data["uid"]
+                
+                if create_host.success:
+                        messagebox.showinfo("Successful", "'%s' was created successfully"%(ip))
+                        log_file.write("User:%s | Status:Successful | Hostname: %s | IP %s"%(API_user,str(name),str(ip))+"\n")
+                        
+                else:
+                        messagebox.showerror("Error","Operation Failed!")
+                        log_file.write("User:%s | Status:Error | Hostname: %s | IP: %s"%(API_user,str(name),str(ip))+"\n")
+                
+
+
+    def Add_New_Multiple_Hosts_Window():
+
+        Add_New_Multiple_Hosts_Window = Tk()
+        Add_New_Multiple_Hosts_Window.title("Add Multiple Hosts")
+        Add_New_Multiple_Hosts_Window.geometry("400x220-1000+500")
+        Add_New_Multiple_Hosts_Window.minsize(200 ,180)
+        Add_New_Multiple_Hosts_Window.maxsize(400 ,220)
+        Add_New_Multiple_Hosts_Window.configure(bg='white')
+        
+        image_file = PhotoImage(file = r'C:\Users\Sercan\Desktop\Python_Projects\python.png')   ##### Image for main menu. You need to change it
+        background = Label(Add_New_Multiple_Hosts_Window,image = image_file,bg='white')
+        background.place(x=100,y=-20,relwidth=1, relheight=1)
+
+
+        def getExcel ():
+            
+                global working_file
+    
+                import_file_path = filedialog.askopenfilename()
+                CheckPoint.Add_New_Multiple_Host_Check(import_file_path)
+
+  
+
+        Label(Add_New_Multiple_Hosts_Window,bg="white").grid(row=0)
+        Label(Add_New_Multiple_Hosts_Window,bg="white").grid(row=1)
+
+        Button(Add_New_Multiple_Hosts_Window,text =" Back ",fg="green",bg="white",font=("Times New Roman", 12),command = lambda:[CheckPoint.Back(Add_New_Multiple_Hosts_Window)]).grid(row =5,column =1,sticky =E)
+        
+        Button(Add_New_Multiple_Hosts_Window,text ="Publish",fg="green",bg="white",font=("Times New Roman", 12),command = lambda:[CheckPoint.Publish()]).grid(row =5,column =2,sticky =W)
+    
+        Button(Add_New_Multiple_Hosts_Window,text='Import Excel File',fg="green",bg="white",font=("Times New Roman", 12),command= lambda:[getExcel()]).grid(row =3,column = 1)
+
+
+        Add_New_Multiple_Hosts_Window.mainloop()
+
+
+
+
+    def Add_New_Multiple_Host_Check(file): 
+
+        global uid 
+
+        wb = load_workbook(file)
+        ws = wb.active
+
+        
+
+        ref_time = datetime.now()
+        current_time = ref_time.strftime("%H_%M")
+
+        day = date.today()
+        today =  day.strftime("%d_%m_%Y")
+
+        log_time = today + ("_") + current_time
+        
+        log_file = open(r"C:\Checkpoint_Automation\Publish_Logs\%s_log.txt"%(log_time),"w") ### For Logging
+
+        
+
+
+        client_args = APIClientArgs(server=str(API_server_checked))
+        with APIClient(client_args) as client:
+            login_res = client.login(API_user,API_password,domain=domain_id)
+
+            session_id = login_res.data["sid"]
+            print("Session id:" + str(session_id))
+
+            uid = login_res.data["uid"]
+            
+
+        
+            for row in range(1,ws.max_row+1):
+                if str(ws.cell(row,3).value) == "32":
+                        create_host = client.api_call("add-host",
+                                                      {"name": str(ws.cell(row,1).value),"ip-address": str(ws.cell(row,2).value),"color": "black", "comments": "no-comments"})
+                                                                                                                                                    
+            
+                        if create_host.success:
+                            messagebox.showinfo("Successful", "'%s' was created successfully"%(str(ws.cell(row,1).value)))
+                            log_file.write("User:%s | Status:Successful | Hostname: %s | IP %s"%(API_user,str(ws.cell(row,1).value),str(ws.cell(row,2).value))+"\n")
+                        else:
+                            messagebox.showerror("Error","'%s' was not created !"%(str(ws.cell(row,1).value)))
+                            log_file.write("User:%s | Status:Error | Hostname: %s | IP: %s"%(API_user,str(ws.cell(row,1).value),str(ws.cell(row,2).value))+"\n")
+                            
+            log_file.close()       
+
+                        
+    def Discard():
+        
+
+        client_args = APIClientArgs(server=str(API_server_checked))
+        with APIClient(client_args) as client:
+            login_res = client.login(API_user,API_password,domain=domain_id)
+
+            session_id = login_res.data["sid"]
+            #print("Session id:" + str(session_id))
+
+            uid = login_res.data["uid"]
+
+            #session = client.api_call("switch-session",{"uid":uid})
+            discard_res = client.api_call("discard",{})
+            pprint(discard_res)
+               
+            if discard_res.success:
+                messagebox.showinfo("Successful","The changes were discarded")
+            else:
+                messagebox.showerror("Error","Failed to discard the changes.")
+            
+
+
+    def Publish():
+
+        
+            
+        client_args = APIClientArgs(server=str(API_server_checked))
+        
+        with APIClient(client_args) as client:
+                login_res = client.login(API_user,API_password,domain=domain_id)
+
+                session = client.api_call("switch-session",{"uid":uid})
+                publish_res = client.api_call("publish",{})
+               
+                if publish_res.success:
+                    messagebox.showinfo("Successful","The changes were published successfully.")
+                else:
+                    messagebox.showerror("Error","Failed to publish the changes.")
+                    
+                    
+
+Main_Window()
